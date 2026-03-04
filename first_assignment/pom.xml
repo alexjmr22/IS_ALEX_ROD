@@ -14,5 +14,11 @@
       <version>3.8.1</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+        <groupId>com.fasterxml.jackson.core</groupId>
+        <artifactId>jackson-databind</artifactId>
+        <version>2.16.1</version>
+    </dependency>
+    <!-- BIBLIOTECA JACKSON: Essencial para transformar objetos Java em JSON (Serialização) -->
   </dependencies>
 </project>

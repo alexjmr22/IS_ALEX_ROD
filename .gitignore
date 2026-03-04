@@ -1,0 +1,16 @@
+# Maven
+target/
+
+# IDEs
+.idea/
+.vscode/
+*.iml
+
+# Dados e Estatísticas (Gerados pelo programa)
+*.json
+stats.csv
+stats.txt
+
+# Logs e ficheiros temporários
+*.log
+.DS_Store
