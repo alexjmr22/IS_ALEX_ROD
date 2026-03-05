@@ -19,6 +19,35 @@
         <artifactId>jackson-databind</artifactId>
         <version>2.16.1</version>
     </dependency>
+    <dependency>
+        <groupId>de.undercouch</groupId>
+        <artifactId>bson4jackson</artifactId>
+        <version>2.15.1</version>
+    </dependency>
     <!-- BIBLIOTECA JACKSON: Essencial para transformar objetos Java em JSON (Serialização) -->
+    <!-- BIBLIOTECA BSON4JACKSON: Para suporte a formato BSON binário -->
   </dependencies>
+ 
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <version>3.1.0</version>
+        <configuration>
+          <mainClass>pt.uc.eai.Main</mainClass>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.11.0</version>
+        <configuration>
+          <source>8</source>
+          <target>8</target>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 </project>
+
