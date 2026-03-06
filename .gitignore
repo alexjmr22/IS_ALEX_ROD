@@ -8,7 +8,6 @@ target/
 
 # Dados e Estatísticas (Gerados pelo programa)
 *.json
-stats.csv
 stats.txt
 
 # Logs e ficheiros temporários

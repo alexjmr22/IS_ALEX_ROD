@@ -25,7 +25,7 @@ public class DataCollector {
             
             // Header apenas se o ficheiro for novo
             if (isNew) {
-                out.println("PayloadID,Format,Service,DeTimeMs,SeTimeMs,TotalTimeMs,Size_Bytes,RAM_Bytes,Timestamp");
+                out.println("PayloadID,Format,Service,AvgDeTimeMs,AvgSeTimeMs,AvgTotalTimeMs,Size_Bytes,AvgRAM_Bytes,Timestamp");
             }
 
             for (ServiceMetrics m : metricsList) {
@@ -44,6 +44,6 @@ public class DataCollector {
             }
         }
         
-        System.out.println("[DataCollector] Ficheiro " + statsFile.getAbsolutePath() + " criado com sucesso.");
+        System.out.println("[DataCollector] Ficheiro " + statsFile.getAbsolutePath() + " guardado com sucesso.");
     }
 }
