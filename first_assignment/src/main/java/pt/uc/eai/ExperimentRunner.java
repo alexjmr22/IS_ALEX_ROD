@@ -20,29 +20,31 @@ public class ExperimentRunner {
         int pixelsLen = Config.getIntProperty("generator.pixelsLen", 10);
         int metadataLen = Config.getIntProperty("generator.metadataLen", 10);
 
-        int framesPerChunk = Config.getIntProperty("experiment.framesPerChunk", 100);
-
         int[] chunkSizes = parseIntArray(Config.getProperty("experiment.chunkSizes", "10,20,50,100,200,500,1000"));
+        int[] fpcValues = parseIntArray(Config.getProperty("experiment.framesPerChunk", "100"));
         SerializationFormat[] formats = parseFormats(Config.getProperty("experiment.formats", "JSON,BSON"));
 
         System.out.println("=== Experiment Runner ===");
-        System.out.println("Formats     : " + Arrays.toString(formats));
-        System.out.println("Chunk sizes : " + Arrays.toString(chunkSizes));
-        System.out.println("FPC (fixed) : " + framesPerChunk);
-        System.out.println("Iterations  : " + Config.getProperty("pipeline.iterations", "30"));
+        System.out.println("Formats           : " + Arrays.toString(formats));
+        System.out.println("Chunk sizes       : " + Arrays.toString(chunkSizes));
+        System.out.println("Frames per chunk  : " + Arrays.toString(fpcValues));
+        System.out.println("Iterations        : " + Config.getProperty("pipeline.iterations", "30"));
         System.out.println("========================\n");
 
         for (SerializationFormat format : formats) {
             for (int numChunks : chunkSizes) {
-                ExperimentConfig expConfig = new ExperimentConfig(format, numChunks, framesPerChunk);
-                System.out.printf("%n[EXPERIMENT] %s%n", expConfig);
+                for (int framesPerChunk : fpcValues) {
+                    ExperimentConfig expConfig = new ExperimentConfig(format, numChunks, framesPerChunk);
+                    System.out.printf("%n[EXPERIMENT] %s%n", expConfig);
 
-                ObjectMapper mapper = Forma.createMapper(format);
-                PayloadGenerator gen = new PayloadGenerator(seed);
-                Payload payload = gen.generate(streamId, numChunks, framesPerChunk, audioLen, pixelsLen, metadataLen);
+                    ObjectMapper mapper = Forma.createMapper(format);
+                    PayloadGenerator gen = new PayloadGenerator(seed);
+                    Payload payload = gen.generate(streamId, numChunks, framesPerChunk, audioLen, pixelsLen,
+                            metadataLen);
 
-                PipelineRunner runner = new PipelineRunner(mapper);
-                runner.runExperiment(payload, expConfig);
+                    PipelineRunner runner = new PipelineRunner(mapper);
+                    runner.runExperiment(payload, expConfig);
+                }
             }
         }
 
