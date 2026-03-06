@@ -36,7 +36,16 @@
         <version>3.1.0</version>
         <configuration>
           <mainClass>pt.uc.eai.Main</mainClass>
+          <arguments/>
+          <systemProperties/>
         </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>java</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
