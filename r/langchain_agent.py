@@ -8,7 +8,7 @@ from pydantic import BaseModel
 # LangChain & LangGraph
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import HumanMessage
-from langchain.agents import create_agent          
+from langgraph.prebuilt import create_react_agent
 from langgraph.checkpoint.memory import InMemorySaver
 
 # MCP Adapters
@@ -27,7 +27,7 @@ if not GOOGLE_API_KEY:
     raise ValueError("A variável GOOGLE_API_KEY não está definida no .env")
 
 # ── LLM ───────────────────────────────────────────────────────────────────────
-llm = ChatGoogleGenerativeAI(model="gemini-3.1-flash-lite-preview", google_api_key=GOOGLE_API_KEY) #gemini-2.5-flash , ir trocando de modelo se chegar ao limite gratuito https://ai.google.dev/gemini-api/docs/models/
+llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=GOOGLE_API_KEY) # fallback: gemini-3.1-flash-lite-preview
 
 # ── MEMORY (persists across requests for the same thread_id) ──────────────────
 memory = InMemorySaver()
@@ -82,10 +82,10 @@ async def lifespan(app: FastAPI):
             tools = await load_mcp_tools(session)
             print("\n=== TOOLS CARREGADAS ===", tools)
 
-            agent = create_agent(
+            agent = create_react_agent(
                 model=llm,
                 tools=tools,
-                system_prompt=system_instruction,
+                prompt=system_instruction,
                 checkpointer=memory
             )
             print("✅ Agente inicializado com sucesso.")
@@ -131,7 +131,7 @@ async def chat(req: ChatRequest):
 
     except Exception as e:
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail="Erro interno. Verifica o terminal.")
+        raise HTTPException(status_code=500, detail=f"{type(e).__name__}: {e}")
 
 
 @app.post("/reset")

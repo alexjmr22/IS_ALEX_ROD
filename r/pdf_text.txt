@@ -1,0 +1,118 @@
+Assignment #2
+Integração de Sistemas/
+Enterprise Application Integration
+2025/26
+MEI, MSI
+UNIVERSIDADE DE COIMBRA
+FACULDADE DE CIÊNCIAS E TECNOLOGIA
+Departamento de Engenharia Informática Deadline: 2026-04-17
+Notas:
+A fraude denota uma grave falta de ética e constitui um comportamento não
+admissível num estudante do ensino superior e futuro profissional. Qualquer
+tentativa de fraude pode levar à reprovação na disciplina tanto do facilitador
+como do prevaricador.
+The Model Context Protocol (MCP)
+Objectives
+• Understand how MCP exposes capabilities to LLM-based agents
+• Design Application Programming Interfaces (APIs) that can be consumed by
+Artificial Intelligence (AI) systems
+• Distinguish between actions (tools) and context (resources)
+• Create reusable prompt templates
+• Build a simple client interface for interacting with an MCP server
+Overview
+Large language model (LLM) applications increasingly rely on structured interfaces
+to interact with external systems. The Model Context Protocol (MCP) provides a
+standard mechanism for exposing capabilities such as tools, resources, and prompts
+to AI assistants. In this assignment, students will design and implement a small
+service whose functionality is exposed through MCP and Representational State
+Transfer (REST). The system will provide a simple domain Application Programming
+Interface (API) and allow an AI client to interact with it via MCP primitives.
+1/4
+--- PAGE ---
+Resources
+• What is the Model Context Protocol (MCP)? - Model Context Protocol:
+https://modelcontextprotocol.io/docs/getting-started/intro
+• Model Context Protocol (MCP) Assets | by Abhishek Jaiswal | Medium:
+https://abhishek-iiit.medium.com/model-context-protocol-mcp-assets-
+8cae94599875
+• Welcome to FastMCP – FastMCP: https://gofastmcp.com/getting-
+started/welcome
+• FastAPI: https://fastapi.tiangolo.com/
+• SQLModel: https://sqlmodel.tiangolo.com/
+• Java MCP Server - Model Context Protocol:
+https://modelcontextprotocol.io/sdk/java/mcp-server
+• The official Java SDK for Model Context Protocol servers and clients:
+https://github.com/modelcontextprotocol/java-sdk
+• SpringBoot: https://spring.io/projects/spring-boot
+• LangChain: Observe, Evaluate, and Deploy Reliable AI Agents:
+https://www.langchain.com/
+MCP Training Part (doesn’t count for evaluation)
+Before they implement the final solution, students should write a small server to
+experiment the technologies. They can pick a domain they like for the server, e.g., a
+pet clinic, a library, a car repair shop, or other. Before starting implementation,
+students are encouraged to do some preparatory exercises.
+1. Create a REST service that has a greet or hello world message.
+2. Create an Entity, connect it to a database, such as SQLite or other and add CRUD
+operations for that entity in the REST service.
+3. Expose the same operations on that Entity with MCP tools. Demonstrate that these tools
+are working properly by connecting an agent with the corresponding MCP client
+configured. Students may use VS Code as the agent. Students should ensure that core
+functions are shared both by the REST and the MCP interfaces, as in Figure 1.
+2/4
+--- PAGE ---
+REST
+M
+C
+P
+Core
+functions
+Figure 1 - Server core functions exposed as REST and MCP.
+4. Expose a text or pdf file as resource, such as the database model or some internal report.
+5. Add a prompt to the MCP server. For example, in a pet shop scenario, the prompt could
+describe in detail a process for extracting and organizing data about pet consultations.
+Description of the Assignment (for Evaluation)
+LLM
+Browser Langchain
+P
+Textbox Agent C
+M
+Server
+Core
+Memory
+T functions
+S
+E
+R
+Postman
+Figure 2 – Overall architecture to build.
+The goal of this assignment is to create a web page with a simple text box that allows
+users to interact with an agent that can resort to an MCP server, as in Figure 2.
+Students must select a domain (possibly the same as in the practicing part) with at
+least two entities related to each other, such as pets and doctors, and expose Create-
+Read-Update-Delete (CRUD) functionality on these entities via REST and MCP, to
+3/4
+--- PAGE ---
+enable a simple use of the functionality by AI agents. Students must expose MCP tools,
+resources (at least two), and at least one prompt for the agent. The prompt may be
+used at startup to initialize the LLM. The MCP server should also:
+• Expose at least one operation or parameter in one of the operations that raises
+some exception and that cannot be concluded.
+• Expose at least one operation or parameter in one of the operations that
+returns an error.
+• Have two operations similar in nature and output (e.g. add) but where the
+input parameters and output parameters are slight variations of each other
+(one accepts and outputs as a strings, the other as a float, for example).
+Students may select Java or Python for their core services, REST and MCP
+implementations. The agent should be written using the Langchain platform. The
+domain, the tools, and other options should be discussed with the professors. A
+working example that students can download and improve is provided.
+Students should prepare a pdf presentation for 5 minutes, which they will discuss
+with the professors.
+Good work!
+Final Delivery
+• The work should be done in groups of 2 students. Both group members must be
+fully aware of all the details as their defense may occur separately. Work together!
+• Grades will be based on the quality of the presentation and defense.
+• Students should submit the presentation pdf at Inforestudante. Students must
+also submit the source code for discussion.
+4/4
