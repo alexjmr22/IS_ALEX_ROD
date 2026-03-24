@@ -13,3 +13,14 @@ stats.txt
 # Logs e ficheiros temporários
 *.log
 .DS_Store
+
+# P2 - Python e Ambientes Virtuais
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+.env
+.pytest_cache/
+.mypy_cache/
