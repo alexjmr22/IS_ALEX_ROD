@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException, Query, Body
 import uvicorn
-from sqlmodel import Field, Session, SQLModel, create_engine, select
+from sqlmodel import Field, Session, SQLModel, col, create_engine, select
 from typing import Optional
 
 class Equipa(SQLModel, table=True):
@@ -12,6 +12,12 @@ class Equipa(SQLModel, table=True):
     orcamento_salarios: float = Field(index=True)
 
 
+class EquipaUpdate(SQLModel):
+    name: str
+    estadio: str
+    ano_fundacao: int
+    orcamento_transferencias: float
+    orcamento_salarios: float
 
 
 class Jogador(SQLModel, table=True):
@@ -104,6 +110,144 @@ def seed_data():
         session.commit()
 
 app = FastAPI()
+
+# ===== ENDPOINTS DAS EQUIPAS =====
+
+@app.get("/equipas")
+def get_equipas(
+    name: Optional[str] = Query(None, description="Filtrar por nome"),
+    estadio: Optional[str] = Query(None, description="Filtrar por estádio"),
+    ano_min: Optional[int] = Query(None, description="Ano de fundação mínimo"),
+    ano_max: Optional[int] = Query(None, description="Ano de fundação máximo"),
+    orcamento_transferencias_min: Optional[float] = Query(None, description="Orçamento de transferências mínimo"),
+    orcamento_salarios_min: Optional[float] = Query(None, description="Orçamento de salários mínimo"),
+):
+    """Listar todas as equipas com filtros opcionais"""
+    with Session(engine) as session:
+        query = select(Equipa)
+
+        if name:
+            query = query.where(col(Equipa.name).contains(name))
+        if estadio:
+            query = query.where(col(Equipa.estadio).contains(estadio))
+        if ano_min:
+            query = query.where(Equipa.ano_fundacao >= ano_min)
+        if ano_max:
+            query = query.where(Equipa.ano_fundacao <= ano_max)
+        if orcamento_transferencias_min:
+            query = query.where(Equipa.orcamento_transferencias >= orcamento_transferencias_min)
+        if orcamento_salarios_min:
+            query = query.where(Equipa.orcamento_salarios >= orcamento_salarios_min)
+
+        equipas = session.exec(query).all()
+        return equipas
+
+
+@app.get("/equipas/{equipa_id}")
+def get_equipa(equipa_id: int):
+    """Obter uma equipa específica por ID"""
+    with Session(engine) as session:
+        equipa = session.get(Equipa, equipa_id)
+        if not equipa:
+            raise HTTPException(status_code=404, detail="Equipa não encontrada")
+        return equipa
+
+
+@app.post("/equipas")
+def create_equipa(
+    name: str = Body(...),
+    estadio: str = Body(...),
+    ano_fundacao: int = Body(...),
+    orcamento_transferencias: float = Body(...),
+    orcamento_salarios: float = Body(...),
+):
+    """Criar uma nova equipa"""
+    # Validações
+    if not name.strip():
+        raise HTTPException(status_code=400, detail="O nome da equipa não pode estar vazio")
+    if ano_fundacao < 1800 or ano_fundacao > 2025:
+        raise HTTPException(status_code=400, detail="Ano de fundação inválido")
+    if orcamento_transferencias < 0:
+        raise HTTPException(status_code=400, detail="Orçamento de transferências não pode ser negativo")
+    if orcamento_salarios < 0:
+        raise HTTPException(status_code=400, detail="Orçamento de salários não pode ser negativo")
+
+    with Session(engine) as session:
+        # Verificar se já existe uma equipa com o mesmo nome
+        existing = session.exec(select(Equipa).where(Equipa.name == name)).first()
+        if existing:
+            raise HTTPException(status_code=400, detail=f"Já existe uma equipa com o nome '{name}'")
+
+        equipa = Equipa(
+            name=name,
+            estadio=estadio,
+            ano_fundacao=ano_fundacao,
+            orcamento_transferencias=orcamento_transferencias,
+            orcamento_salarios=orcamento_salarios,
+        )
+        session.add(equipa)
+        session.commit()
+        session.refresh(equipa)
+        return equipa
+
+
+@app.put("/equipas/{equipa_id}")
+def update_equipa(equipa_id: int, equipa_data: EquipaUpdate):
+    """Atualizar uma equipa existente"""
+    with Session(engine) as session:
+        equipa = session.get(Equipa, equipa_id)
+        if not equipa:
+            raise HTTPException(status_code=404, detail="Equipa não encontrada")
+
+        # Verificar duplicado de nome (excluindo a própria equipa)
+        if equipa_data.name != equipa.name:
+            existing = session.exec(
+                select(Equipa).where(Equipa.name == equipa_data.name)
+            ).first()
+            if existing:
+                raise HTTPException(status_code=400, detail=f"Já existe uma equipa com o nome '{equipa_data.name}'")
+
+        if orcamento_transferencias := equipa_data.orcamento_transferencias:
+            if orcamento_transferencias < 0:
+                raise HTTPException(status_code=400, detail="Orçamento de transferências não pode ser negativo")
+        if orcamento_salarios := equipa_data.orcamento_salarios:
+            if orcamento_salarios < 0:
+                raise HTTPException(status_code=400, detail="Orçamento de salários não pode ser negativo")
+
+        equipa.name = equipa_data.name
+        equipa.estadio = equipa_data.estadio
+        equipa.ano_fundacao = equipa_data.ano_fundacao
+        equipa.orcamento_transferencias = equipa_data.orcamento_transferencias
+        equipa.orcamento_salarios = equipa_data.orcamento_salarios
+
+        session.add(equipa)
+        session.commit()
+        session.refresh(equipa)
+        return equipa
+
+
+@app.delete("/equipas/{equipa_id}")
+def delete_equipa(equipa_id: int):
+    """Eliminar uma equipa"""
+    with Session(engine) as session:
+        equipa = session.get(Equipa, equipa_id)
+        if not equipa:
+            raise HTTPException(status_code=404, detail="Equipa não encontrada")
+
+        # Verificar se ainda existem jogadores nesta equipa
+        jogadores = session.exec(
+            select(Jogador).where(Jogador.equipa_id == equipa_id)
+        ).all()
+        if jogadores:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Não é possível eliminar a equipa '{equipa.name}' porque ainda tem {len(jogadores)} jogador(es) associado(s)"
+            )
+
+        session.delete(equipa)
+        session.commit()
+        return {"message": f"Equipa '{equipa.name}' eliminada com sucesso"}
+
 
 # ===== ENDPOINTS DOS JOGADORES =====
 
