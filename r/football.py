@@ -1,6 +1,7 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Query, Body
 import uvicorn
-from sqlmodel import Field, Session, SQLModel, create_engine, select
+from sqlmodel import Field, Session, SQLModel, col, create_engine, select
+from typing import Optional
 
 class Equipa(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
@@ -11,6 +12,12 @@ class Equipa(SQLModel, table=True):
     orcamento_salarios: float = Field(index=True)
 
 
+class EquipaUpdate(SQLModel):
+    name: str
+    estadio: str
+    ano_fundacao: int
+    orcamento_transferencias: float
+    orcamento_salarios: float
 
 
 class Jogador(SQLModel, table=True):
@@ -103,6 +110,370 @@ def seed_data():
         session.commit()
 
 app = FastAPI()
+
+# ===== ENDPOINTS DAS EQUIPAS =====
+
+@app.get("/equipas")
+def get_equipas(
+    name: Optional[str] = Query(None, description="Filtrar por nome"),
+    estadio: Optional[str] = Query(None, description="Filtrar por estádio"),
+    ano_min: Optional[int] = Query(None, description="Ano de fundação mínimo"),
+    ano_max: Optional[int] = Query(None, description="Ano de fundação máximo"),
+    orcamento_transferencias_min: Optional[float] = Query(None, description="Orçamento de transferências mínimo"),
+    orcamento_salarios_min: Optional[float] = Query(None, description="Orçamento de salários mínimo"),
+):
+    """Listar todas as equipas com filtros opcionais"""
+    with Session(engine) as session:
+        query = select(Equipa)
+
+        if name:
+            query = query.where(col(Equipa.name).contains(name))
+        if estadio:
+            query = query.where(col(Equipa.estadio).contains(estadio))
+        if ano_min:
+            query = query.where(Equipa.ano_fundacao >= ano_min)
+        if ano_max:
+            query = query.where(Equipa.ano_fundacao <= ano_max)
+        if orcamento_transferencias_min:
+            query = query.where(Equipa.orcamento_transferencias >= orcamento_transferencias_min)
+        if orcamento_salarios_min:
+            query = query.where(Equipa.orcamento_salarios >= orcamento_salarios_min)
+
+        equipas = session.exec(query).all()
+        return equipas
+
+
+@app.get("/equipas/{equipa_id}")
+def get_equipa(equipa_id: int):
+    """Obter uma equipa específica por ID"""
+    with Session(engine) as session:
+        equipa = session.get(Equipa, equipa_id)
+        if not equipa:
+            raise HTTPException(status_code=404, detail="Equipa não encontrada")
+        return equipa
+
+
+@app.post("/equipas")
+def create_equipa(
+    name: str = Body(...),
+    estadio: str = Body(...),
+    ano_fundacao: int = Body(...),
+    orcamento_transferencias: float = Body(...),
+    orcamento_salarios: float = Body(...),
+):
+    """Criar uma nova equipa"""
+    # Validações
+    if not name.strip():
+        raise HTTPException(status_code=400, detail="O nome da equipa não pode estar vazio")
+    if ano_fundacao < 1800 or ano_fundacao > 2025:
+        raise HTTPException(status_code=400, detail="Ano de fundação inválido")
+    if orcamento_transferencias < 0:
+        raise HTTPException(status_code=400, detail="Orçamento de transferências não pode ser negativo")
+    if orcamento_salarios < 0:
+        raise HTTPException(status_code=400, detail="Orçamento de salários não pode ser negativo")
+
+    with Session(engine) as session:
+        # Verificar se já existe uma equipa com o mesmo nome
+        existing = session.exec(select(Equipa).where(Equipa.name == name)).first()
+        if existing:
+            raise HTTPException(status_code=400, detail=f"Já existe uma equipa com o nome '{name}'")
+
+        equipa = Equipa(
+            name=name,
+            estadio=estadio,
+            ano_fundacao=ano_fundacao,
+            orcamento_transferencias=orcamento_transferencias,
+            orcamento_salarios=orcamento_salarios,
+        )
+        session.add(equipa)
+        session.commit()
+        session.refresh(equipa)
+        return equipa
+
+
+@app.put("/equipas/{equipa_id}")
+def update_equipa(equipa_id: int, equipa_data: EquipaUpdate):
+    """Atualizar uma equipa existente"""
+    with Session(engine) as session:
+        equipa = session.get(Equipa, equipa_id)
+        if not equipa:
+            raise HTTPException(status_code=404, detail="Equipa não encontrada")
+
+        # Verificar duplicado de nome (excluindo a própria equipa)
+        if equipa_data.name != equipa.name:
+            existing = session.exec(
+                select(Equipa).where(Equipa.name == equipa_data.name)
+            ).first()
+            if existing:
+                raise HTTPException(status_code=400, detail=f"Já existe uma equipa com o nome '{equipa_data.name}'")
+
+        if orcamento_transferencias := equipa_data.orcamento_transferencias:
+            if orcamento_transferencias < 0:
+                raise HTTPException(status_code=400, detail="Orçamento de transferências não pode ser negativo")
+        if orcamento_salarios := equipa_data.orcamento_salarios:
+            if orcamento_salarios < 0:
+                raise HTTPException(status_code=400, detail="Orçamento de salários não pode ser negativo")
+
+        equipa.name = equipa_data.name
+        equipa.estadio = equipa_data.estadio
+        equipa.ano_fundacao = equipa_data.ano_fundacao
+        equipa.orcamento_transferencias = equipa_data.orcamento_transferencias
+        equipa.orcamento_salarios = equipa_data.orcamento_salarios
+
+        session.add(equipa)
+        session.commit()
+        session.refresh(equipa)
+        return equipa
+
+
+@app.delete("/equipas/{equipa_id}")
+def delete_equipa(equipa_id: int):
+    """Eliminar uma equipa"""
+    with Session(engine) as session:
+        equipa = session.get(Equipa, equipa_id)
+        if not equipa:
+            raise HTTPException(status_code=404, detail="Equipa não encontrada")
+
+        # Verificar se ainda existem jogadores nesta equipa
+        jogadores = session.exec(
+            select(Jogador).where(Jogador.equipa_id == equipa_id)
+        ).all()
+        if jogadores:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Não é possível eliminar a equipa '{equipa.name}' porque ainda tem {len(jogadores)} jogador(es) associado(s)"
+            )
+
+        session.delete(equipa)
+        session.commit()
+        return {"message": f"Equipa '{equipa.name}' eliminada com sucesso"}
+
+
+# ===== ENDPOINTS DOS JOGADORES =====
+
+@app.get("/jogadores")
+def get_jogadores(
+    equipa_id: Optional[int] = Query(None, description="Filtrar por ID da equipa"),
+    posicao: Optional[str] = Query(None, description="Filtrar por posição"),
+    salario_min: Optional[float] = Query(None, description="Salário mínimo"),
+    salario_max: Optional[float] = Query(None, description="Salário máximo"),
+    mercado_min: Optional[float] = Query(None, description="Valor de mercado mínimo"),
+    mercado_max: Optional[float] = Query(None, description="Valor de mercado máximo")
+):
+    """Listar todos os jogadores com filtros opcionais"""
+    with Session(engine) as session:
+        query = select(Jogador)
+
+        if equipa_id:
+            query = query.where(Jogador.equipa_id == equipa_id)
+        if posicao:
+            query = query.where(Jogador.posicao == posicao)
+        if salario_min:
+            query = query.where(Jogador.salario >= salario_min)
+        if salario_max:
+            query = query.where(Jogador.salario <= salario_max)
+        if mercado_min:
+            query = query.where(Jogador.mercado >= mercado_min)
+        if mercado_max:
+            query = query.where(Jogador.mercado <= mercado_max)
+
+        jogadores = session.exec(query).all()
+        return jogadores
+
+
+@app.get("/jogadores/{jogador_id}")
+def get_jogador(jogador_id: int):
+    """Obter um jogador específico por ID"""
+    with Session(engine) as session:
+        jogador = session.get(Jogador, jogador_id)
+        if not jogador:
+            raise HTTPException(status_code=404, detail="Jogador não encontrado")
+        return jogador
+
+
+@app.post("/jogadores")
+def create_jogador(
+    name: str = Body(...),
+    posicao: str = Body(...),
+    numero_camisola: int = Body(...),
+    mercado: float = Body(...),
+    salario: float = Body(...),
+    equipa_id: int = Body(...)
+):
+    """Criar um novo jogador"""
+    jogador = Jogador(
+        name=name,
+        posicao=posicao,
+        numero_camisola=numero_camisola,
+        mercado=mercado,
+        salario=salario,
+        equipa_id=equipa_id
+    )
+    with Session(engine) as session:
+        # Verificar se a equipa existe
+        if jogador.equipa_id:
+            equipa = session.get(Equipa, jogador.equipa_id)
+            if not equipa:
+                raise HTTPException(status_code=400, detail="Equipa não encontrada")
+
+            # Verificar orçamentos da equipa
+            jogadores_equipa = session.exec(
+                select(Jogador).where(Jogador.equipa_id == jogador.equipa_id)
+            ).all()
+            
+            salario_total_atual = sum(j.salario for j in jogadores_equipa)
+            if salario_total_atual + jogador.salario > equipa.orcamento_salarios:
+                raise HTTPException(
+                    status_code=400, 
+                    detail=f"Orçamento de salários insuficiente. A equipa tem disponível: {equipa.orcamento_salarios - salario_total_atual:.2f} (necessário: {jogador.salario})"
+                )
+            
+            if jogador.mercado > equipa.orcamento_transferencias:
+                raise HTTPException(
+                    status_code=400, 
+                    detail=f"Orçamento de transferências insuficiente. A equipa tem disponível: {equipa.orcamento_transferencias:.2f} (necessário: {jogador.mercado})"
+                )
+            
+            # Deduz o valor da transferência ao orçamento da equipa
+            equipa.orcamento_transferencias -= jogador.mercado
+            session.add(equipa)
+
+        # Verificar se o número da camisola já está ocupado na equipa
+        existing_player = session.exec(
+            select(Jogador).where(
+                Jogador.numero_camisola == jogador.numero_camisola,
+                Jogador.equipa_id == jogador.equipa_id
+            )
+        ).first()
+
+        if existing_player:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Número de camisola {jogador.numero_camisola} já está ocupado nesta equipa"
+            )
+
+        session.add(jogador)
+        session.commit()
+        session.refresh(jogador)
+        return jogador
+
+
+@app.put("/jogadores/{jogador_id}")
+def update_jogador(jogador_id: int, jogador_data: Jogador):
+    """Atualizar um jogador existente"""
+    with Session(engine) as session:
+        jogador = session.get(Jogador, jogador_id)
+        if not jogador:
+            raise HTTPException(status_code=404, detail="Jogador não encontrado")
+
+        # Verificar se a nova equipa existe (se fornecida)
+        if jogador_data.equipa_id:
+            equipa = session.get(Equipa, jogador_data.equipa_id)
+            if not equipa:
+                raise HTTPException(status_code=400, detail="Equipa não encontrada")
+
+            # Verificar orçamento se houver mudança de equipa ou de salário
+            if (jogador_data.equipa_id != jogador.equipa_id) or (jogador_data.salario != jogador.salario):
+                jogadores_equipa = session.exec(
+                    select(Jogador).where(
+                        Jogador.equipa_id == jogador_data.equipa_id,
+                        Jogador.id != jogador_id
+                    )
+                ).all()
+                salario_total_atual = sum(j.salario for j in jogadores_equipa)
+                
+                if salario_total_atual + jogador_data.salario > equipa.orcamento_salarios:
+                    raise HTTPException(
+                        status_code=400, 
+                        detail=f"Orçamento de salários insuficiente. A equipa tem disponível: {equipa.orcamento_salarios - salario_total_atual:.2f} (necessário: {jogador_data.salario})"
+                    )
+            
+            # Se for uma transferência entre equipas, validar e deduzir o orçamento de transferências
+            if jogador_data.equipa_id != jogador.equipa_id:
+                if jogador_data.mercado > equipa.orcamento_transferencias:
+                    raise HTTPException(
+                        status_code=400, 
+                        detail=f"Orçamento de transferências insuficiente na nova equipa. Disponível: {equipa.orcamento_transferencias:.2f} (necessário: {jogador_data.mercado})"
+                    )
+                
+                equipa.orcamento_transferencias -= jogador_data.mercado
+                session.add(equipa)
+
+        # Verificar conflito de número de camisola (se alterado)
+        if (jogador_data.numero_camisola != jogador.numero_camisola or
+            jogador_data.equipa_id != jogador.equipa_id):
+            existing_player = session.exec(
+                select(Jogador).where(
+                    Jogador.numero_camisola == jogador_data.numero_camisola,
+                    Jogador.equipa_id == jogador_data.equipa_id,
+                    Jogador.id != jogador_id
+                )
+            ).first()
+
+            if existing_player:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Número de camisola {jogador_data.numero_camisola} já está ocupado nesta equipa"
+                )
+
+        # Atualizar dados
+        jogador.name = jogador_data.name
+        jogador.posicao = jogador_data.posicao
+        jogador.numero_camisola = jogador_data.numero_camisola
+        jogador.mercado = jogador_data.mercado
+        jogador.salario = jogador_data.salario
+        jogador.equipa_id = jogador_data.equipa_id
+
+        session.add(jogador)
+        session.commit()
+        session.refresh(jogador)
+        return jogador
+
+
+@app.delete("/jogadores/{jogador_id}")
+def delete_jogador(jogador_id: int):
+    """Eliminar um jogador"""
+    with Session(engine) as session:
+        jogador = session.get(Jogador, jogador_id)
+        if not jogador:
+            raise HTTPException(status_code=404, detail="Jogador não encontrado")
+
+        session.delete(jogador)
+        session.commit()
+        return {"message": f"Jogador {jogador.name} eliminado com sucesso"}
+
+
+# ===== ENDPOINTS AUXILIARES =====
+
+@app.get("/jogadores/equipa/{equipa_id}")
+def get_jogadores_por_equipa(equipa_id: int):
+    """Obter todos os jogadores de uma equipa específica"""
+    with Session(engine) as session:
+        # Verificar se a equipa existe
+        equipa = session.get(Equipa, equipa_id)
+        if not equipa:
+            raise HTTPException(status_code=404, detail="Equipa não encontrada")
+
+        jogadores = session.exec(
+            select(Jogador).where(Jogador.equipa_id == equipa_id)
+        ).all()
+        return {
+            "equipa": equipa.name,
+            "jogadores": jogadores
+        }
+
+
+@app.get("/jogadores/posicao/{posicao}")
+def get_jogadores_por_posicao(posicao: str):
+    """Obter todos os jogadores de uma posição específica"""
+    with Session(engine) as session:
+        jogadores = session.exec(
+            select(Jogador).where(Jogador.posicao == posicao)
+        ).all()
+        return {
+            "posicao": posicao,
+            "jogadores": jogadores
+        }
 
 
 @app.on_event("startup")
