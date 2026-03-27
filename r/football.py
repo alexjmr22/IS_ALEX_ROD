@@ -1,7 +1,9 @@
 from fastapi import FastAPI, HTTPException, Query, Body
 import uvicorn
 from sqlmodel import Field, Session, SQLModel, create_engine, select
-from typing import Optional
+from typing import Optional, Literal
+
+PosicaoEnum = Literal["GR", "DC", "LD", "LE", "MCD", "MC", "MAO", "EXT", "AV"]
 
 class Equipa(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
@@ -150,7 +152,7 @@ def get_jogador(jogador_id: int):
 @app.post("/jogadores")
 def create_jogador(
     name: str = Body(...),
-    posicao: str = Body(...),
+    posicao: PosicaoEnum = Body(...),
     numero_camisola: int = Body(...),
     mercado: float = Body(...),
     salario: float = Body(...),
@@ -215,53 +217,67 @@ def create_jogador(
 
 
 @app.put("/jogadores/{jogador_id}")
-def update_jogador(jogador_id: int, jogador_data: Jogador):
+def update_jogador(
+    jogador_id: int,
+    posicao: Optional[PosicaoEnum] = Body(None),
+    numero_camisola: Optional[int] = Body(None),
+    mercado: Optional[float] = Body(None),
+    salario: Optional[float] = Body(None),
+    equipa_id: Optional[int] = Body(None)
+):
     """Atualizar um jogador existente"""
     with Session(engine) as session:
         jogador = session.get(Jogador, jogador_id)
         if not jogador:
             raise HTTPException(status_code=404, detail="Jogador não encontrado")
 
+        # Se os campos não forem fornecidos (None), mantém os dados atuais
+        posicao = posicao if posicao is not None else jogador.posicao
+        numero_camisola = numero_camisola if numero_camisola is not None else jogador.numero_camisola
+        mercado = mercado if mercado is not None else jogador.mercado
+        salario = salario if salario is not None else jogador.salario
+        equipa_id = equipa_id if equipa_id is not None else jogador.equipa_id
+
         # Verificar se a nova equipa existe (se fornecida)
-        if jogador_data.equipa_id:
-            equipa = session.get(Equipa, jogador_data.equipa_id)
+        if equipa_id:
+            equipa = session.get(Equipa, equipa_id)
             if not equipa:
                 raise HTTPException(status_code=400, detail="Equipa não encontrada")
 
             # Verificar orçamento se houver mudança de equipa ou de salário
-            if (jogador_data.equipa_id != jogador.equipa_id) or (jogador_data.salario != jogador.salario):
+            if (equipa_id != jogador.equipa_id) or (salario != jogador.salario):
                 jogadores_equipa = session.exec(
                     select(Jogador).where(
-                        Jogador.equipa_id == jogador_data.equipa_id,
+                        Jogador.equipa_id == equipa_id,
                         Jogador.id != jogador_id
                     )
                 ).all()
                 salario_total_atual = sum(j.salario for j in jogadores_equipa)
                 
-                if salario_total_atual + jogador_data.salario > equipa.orcamento_salarios:
+                if salario_total_atual + salario > equipa.orcamento_salarios:
                     raise HTTPException(
                         status_code=400, 
-                        detail=f"Orçamento de salários insuficiente. A equipa tem disponível: {equipa.orcamento_salarios - salario_total_atual:.2f} (necessário: {jogador_data.salario})"
+                        detail=f"Orçamento de salários insuficiente. A equipa tem disponível: {equipa.orcamento_salarios - salario_total_atual:.2f} (necessário: {salario})"
                     )
             
             # Se for uma transferência entre equipas, validar e deduzir o orçamento de transferências
-            if jogador_data.equipa_id != jogador.equipa_id:
-                if jogador_data.mercado > equipa.orcamento_transferencias:
+            if equipa_id != jogador.equipa_id:
+                if mercado > equipa.orcamento_transferencias:
                     raise HTTPException(
                         status_code=400, 
-                        detail=f"Orçamento de transferências insuficiente na nova equipa. Disponível: {equipa.orcamento_transferencias:.2f} (necessário: {jogador_data.mercado})"
+                        detail=f"Orçamento de transferências insuficiente na nova equipa. Disponível: {equipa.orcamento_transferencias:.2f} (necessário: {mercado})"
                     )
                 
-                equipa.orcamento_transferencias -= jogador_data.mercado
+                equipa.orcamento_transferencias -= mercado
                 session.add(equipa)
 
         # Verificar conflito de número de camisola (se alterado)
-        if (jogador_data.numero_camisola != jogador.numero_camisola or
-            jogador_data.equipa_id != jogador.equipa_id):
+        if (numero_camisola != jogador.numero_camisola or
+            equipa_id != jogador.equipa_id):
             existing_player = session.exec(
                 select(Jogador).where(
-                    Jogador.numero_camisola == jogador_data.numero_camisola,
-                    Jogador.equipa_id == jogador_data.equipa_id,
+                    Jogador.numero_camisola == numero_camisola,
+                    Jogador.equipa_id == equipa_id,
                     Jogador.id != jogador_id
                 )
             ).first()
@@ -269,16 +285,15 @@ def update_jogador(jogador_id: int, jogador_data: Jogador):
             if existing_player:
                 raise HTTPException(
                     status_code=400,
-                    detail=f"Número de camisola {jogador_data.numero_camisola} já está ocupado nesta equipa"
+                    detail=f"Número de camisola {numero_camisola} já está ocupado nesta equipa"
                 )
 
         # Atualizar dados
-        jogador.name = jogador_data.name
-        jogador.posicao = jogador_data.posicao
-        jogador.numero_camisola = jogador_data.numero_camisola
-        jogador.mercado = jogador_data.mercado
-        jogador.salario = jogador_data.salario
-        jogador.equipa_id = jogador_data.equipa_id
+        jogador.posicao = posicao
+        jogador.numero_camisola = numero_camisola
+        jogador.mercado = mercado
+        jogador.salario = salario
+        jogador.equipa_id = equipa_id
 
         session.add(jogador)
         session.commit()
