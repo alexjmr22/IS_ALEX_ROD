@@ -11,7 +11,7 @@ from sqlmodel import Session
 from core_functions import (
     engine,
     core_get_equipa, core_create_equipa, core_update_equipa, core_delete_equipa, core_get_equipas,
-    core_get_jogador, core_create_jogador, core_update_jogador, core_delete_jogador, core_get_jogadores,
+    core_get_jogador, core_sign_jogador, core_renew_jogador, core_delete_jogador, core_get_jogadores,
 )
 
 mcp = FastMCP(name="SimpleAssistantServer")
@@ -78,7 +78,7 @@ def create_jogador(
     """Cria um novo jogador na base de dados."""
     with Session(engine) as session:
         try:
-            jogador = core_create_jogador(session, name, posicao, numero_camisola, mercado, salario, equipa_id)
+            jogador = core_sign_jogador(session, name, posicao, numero_camisola, mercado, salario, equipa_id)
             return json.dumps({
                 "id": jogador.id,
                 "name": jogador.name,
@@ -100,7 +100,7 @@ def delete_jogador(jogador_id: int) -> str:
         except ValueError as e:
             return json.dumps({"erro": str(e)})
 @mcp.tool()
-def update_jogador(
+def renew_jogador(
     jogador_id: int,
     name: str | None = None,
     posicao: str | None = None,
@@ -112,7 +112,7 @@ def update_jogador(
     """Atualiza os detalhes de um jogador de futebol pelo seu ID, diretamente da base de dados."""
     with Session(engine) as session:
         try:
-            jogador = core_update_jogador(
+            jogador = core_renew_jogador(
                 session,
                 jogador_id,
                 name=name,

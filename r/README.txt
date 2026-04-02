@@ -1,5 +1,4 @@
 Google API studio: https://aistudio.google.com/app/api-keys
-
 python -m venv venv
 venv\Scripts\activate
 
