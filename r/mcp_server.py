@@ -53,6 +53,109 @@ def get_equipa(equipa_id: int) -> str:
             return json.dumps({"erro": str(e)})
 
 
+@mcp.tool()
+def get_equipas(
+    name: str = "",
+    estadio: str = "",
+    ano_min: int = 0,
+    ano_max: int = 0,
+    orcamento_transferencias_min: float = 0.0,
+    orcamento_salarios_min: float = 0.0,
+) -> str:
+    """Lista todas as equipas de futebol, com filtros opcionais (nome, estádio, anos, orçamentos)."""
+    with Session(engine) as session:
+        equipas = core_get_equipas(
+            session,
+            name=name or None,
+            estadio=estadio or None,
+            ano_min=ano_min or None,
+            ano_max=ano_max or None,
+            orcamento_transferencias_min=orcamento_transferencias_min or None,
+            orcamento_salarios_min=orcamento_salarios_min or None,
+        )
+        return json.dumps(
+            [
+                {
+                    "id": e.id,
+                    "name": e.name,
+                    "estadio": e.estadio,
+                    "ano_fundacao": e.ano_fundacao,
+                    "orcamento_transferencias": e.orcamento_transferencias,
+                    "orcamento_salarios": e.orcamento_salarios,
+                }
+                for e in equipas
+            ],
+            ensure_ascii=False,
+            indent=2,
+        )
+
+
+@mcp.tool()
+def create_equipa(
+    name: str,
+    estadio: str,
+    ano_fundacao: int,
+    orcamento_transferencias: float,
+    orcamento_salarios: float,
+) -> str:
+    """Cria uma nova equipa de futebol na base de dados."""
+    with Session(engine) as session:
+        try:
+            e = core_create_equipa(
+                session, name, estadio, ano_fundacao,
+                orcamento_transferencias, orcamento_salarios,
+            )
+            return json.dumps({
+                "id": e.id,
+                "name": e.name,
+                "estadio": e.estadio,
+                "ano_fundacao": e.ano_fundacao,
+                "orcamento_transferencias": e.orcamento_transferencias,
+                "orcamento_salarios": e.orcamento_salarios,
+            }, ensure_ascii=False, indent=2)
+        except ValueError as e:
+            return json.dumps({"erro": str(e)})
+
+
+@mcp.tool()
+def update_equipa(
+    equipa_id: int,
+    name: str,
+    estadio: str,
+    ano_fundacao: int,
+    orcamento_transferencias: float,
+    orcamento_salarios: float,
+) -> str:
+    """Atualiza os dados de uma equipa existente pelo seu ID."""
+    with Session(engine) as session:
+        try:
+            e = core_update_equipa(
+                session, equipa_id, name, estadio, ano_fundacao,
+                orcamento_transferencias, orcamento_salarios,
+            )
+            return json.dumps({
+                "id": e.id,
+                "name": e.name,
+                "estadio": e.estadio,
+                "ano_fundacao": e.ano_fundacao,
+                "orcamento_transferencias": e.orcamento_transferencias,
+                "orcamento_salarios": e.orcamento_salarios,
+            }, ensure_ascii=False, indent=2)
+        except ValueError as e:
+            return json.dumps({"erro": str(e)})
+
+
+@mcp.tool()
+def delete_equipa(equipa_id: int) -> str:
+    """Elimina uma equipa da base de dados pelo seu ID (só é possível se não tiver jogadores)."""
+    with Session(engine) as session:
+        try:
+            result = core_delete_equipa(session, equipa_id)
+            return json.dumps(result, ensure_ascii=False, indent=2)
+        except ValueError as e:
+            return json.dumps({"erro": str(e)})
+
+
 # ─── RESOURCE ────────────────────────────────────────────────────────────────
 @mcp.resource("info://app")
 def get_app_info() -> str:
@@ -60,7 +163,7 @@ def get_app_info() -> str:
     return (
         "SimpleAssistantServer v1.0\n"
         "Purpose: Demo MCP server with a tool, resource, and prompt.\n"
-        "Available tools: calculate_bmi, get_equipa\n"
+        "Available tools: calculate_bmi, get_equipa, get_equipas, create_equipa, update_equipa, delete_equipa\n"
         "Built with: FastMCP + Python\n"
     )
 
