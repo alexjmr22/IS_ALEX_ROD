@@ -257,7 +257,7 @@ def core_get_jogador(session: Session, jogador_id: int) -> Jogador:
     return jogador
 
 
-def core_create_jogador(session: Session, name: str, posicao: str, numero_camisola: int,
+def core_sign_jogador(session: Session, name: str, posicao: str, numero_camisola: int,
                          mercado: float, salario: float, equipa_id: int) -> Jogador:
     """Criar um jogador com validações de orçamento e camisola. Raises ValueError se regras falharem."""
     equipa = session.get(Equipa, equipa_id)
@@ -292,7 +292,7 @@ def core_create_jogador(session: Session, name: str, posicao: str, numero_camiso
     return jogador
 
 
-def core_update_jogador(session: Session, jogador_id: int, posicao: Optional[str] = None,
+def core_renew_jogador(session: Session, jogador_id: int, posicao: Optional[str] = None,
                          numero_camisola: Optional[int] = None, mercado: Optional[float] = None,
                          salario: Optional[float] = None, equipa_id: Optional[int] = None) -> Jogador:
     """Atualizar um jogador. Raises ValueError se regras falharem."""

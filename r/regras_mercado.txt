@@ -1,0 +1,54 @@
+REGRAS DE TRANSFERÊNCIA DE JOGADORES
+====================================
+
+1. ORÇAMENTO DE TRANSFERÊNCIAS
+   - Cada equipa tem um orçamento disponível para transferências
+   - O valor de transferência de um jogador é DEDUZIDO imediatamente do orçamento ao criá-lo
+   - Não é possível criar um jogador se mercado > orcamento_transferencias_disponível
+   - Ao transferir um jogador para outra equipa, o orçamento da nova equipa é também decrementado
+
+2. ORÇAMENTO DE SALÁRIOS
+   - Cada equipa tem um limite máximo de salários
+   - O salário total de todos os jogadores NOT pode exceder este limite (é apenas um LIMITE, não é decrementado)
+   - Validação: soma(salarios_jogadores_atuais) + novo_salario <= orcamento_salarios_limite
+   - Ao transferir um jogador, o novo salário é validado contra o limite da nova equipa
+
+3. POSIÇÕES VÁLIDAS
+   - GR  = Guarda-Redes
+   - DC  = Defesa Central
+   - LD  = Lateral Direito
+   - LE  = Lateral Esquerdo
+   - MCD = Médio Defensivo
+   - MC  = Médio Centro
+   - MAO = Médio Ala Ofensivamente
+   - EXT = Extremo
+   - AV  = Avançado
+
+4. NÚMERO DE CAMISOLA
+   - Deve ser único por equipa
+   - Dois jogadores da mesma equipa não podem ter o mesmo número
+
+5. RESTRIÇÕES NA ELIMINAÇÃO
+   - Uma equipa só pode ser eliminada se não tiver jogadores associados
+   - Se tem jogadores, é necessário deletá-los primeiro ou transferi-los
+
+6. TRANSFERÊNCIA DE JOGADORES
+   - Um jogador pode ser transferido entre equipas (update com novo equipa_id)
+   - Validações na transferência:
+     * A equipa de destino deve existir
+     * O novo orçamento de salários da equipa de destino deve ter espaço para o salário (atual ou novo)
+     * O novo orçamento de transferências da equipa de destino é decrementado pelo mercado
+     * O número de camisola deve ser único na equipa de destino
+     * O salário do jogador pode ser alterado na mesma operação de transferência
+
+7. VALIDAÇÕES GERAIS
+   - Nomes não podem estar vazios
+   - Anos de fundação: entre 1800 e 2025
+   - Orçamentos não podem ser negativos
+   - IDs de equipa devem existir na base de dados
+
+8. NOTAS IMPORTANTES
+   - O orçamento de TRANSFERÊNCIAS é DECREMENTADO: representa o dinheiro gasto
+   - O orçamento de SALÁRIOS é um LIMITE: representa o teto máximo de gastos mensais
+   - Ao deletar um jogador, o orçamento de transferências da equipa NÃO é restaurado
+   - Posições são case-sensitive: devem ser exatamente como definido (GR, DC, etc.)
