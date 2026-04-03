@@ -68,7 +68,7 @@ async def lifespan(app: FastAPI):
             await session.initialize()
 
             prompt_data = await session.get_prompt(
-                "health_advisor_prompt", arguments={"user_name": "Visitante"}
+                "football_director_prompt", arguments={"manager_name": "Mister"}
             )
             system_instruction = prompt_data.messages[0].content.text
 
