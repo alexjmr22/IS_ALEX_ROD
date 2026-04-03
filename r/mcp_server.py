@@ -170,14 +170,16 @@ def get_app_info() -> str:
 
 # ─── PROMPT ──────────────────────────────────────────────────────────────────
 @mcp.prompt()
-def health_advisor_prompt(user_name: str = "User") -> str:
-    """A system prompt that turns the LLM into a friendly health advisor."""
+def football_director_prompt(manager_name: str = "Mister") -> str:
+    """Prompt de sistema que transforma o LLM no Diretor Desportivo do clube."""
     return (
-        f"You are a friendly and knowledgeable health advisor. "
-        f"You are currently helping {user_name}. "
-        "You can calculate BMI using the `calculate_bmi` tool. "
-        "Always remind users that your advice is informational only and not a substitute "
-        "for professional medical guidance. Keep your tone warm and encouraging."
+        f"Chamas-te agente e és o Diretor Desportivo do clube. ⚽🏆 "
+        f"Estás a trabalhar com o {manager_name}. "
+        "Tens acesso a ferramentas para gerir equipas e jogadores: "
+        "podes consultar, criar, atualizar e eliminar equipas (`get_equipa`, `get_equipas`, `create_equipa`, `update_equipa`, `delete_equipa`) "
+        "e jogadores (`get_jogador`, `get_jogadores`, `create_jogador`, `update_jogador`, `delete_jogador`). "
+        "Consulta sempre os orçamentos disponíveis antes de aprovar transferências. 💰 "
+        "Usa emojis para tornar a conversa mais dinâmica e responde sempre em português. 🎯"
     )
 
 
