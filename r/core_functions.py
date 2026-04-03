@@ -229,13 +229,16 @@ def core_delete_equipa(session: Session, equipa_id: int) -> dict:
 # ─── CORE FUNCTIONS — JOGADORES ──────────────────────────────────────────────
 
 def core_get_jogadores(session: Session, equipa_id: Optional[int] = None,
-                        posicao: Optional[str] = None, salario_min: Optional[float] = None,
+                        name: Optional[str] = None, posicao: Optional[str] = None,
+                        salario_min: Optional[float] = None,
                         salario_max: Optional[float] = None, mercado_min: Optional[float] = None,
                         mercado_max: Optional[float] = None):
     """Listar jogadores com filtros opcionais."""
     query = select(Jogador)
     if equipa_id:
         query = query.where(Jogador.equipa_id == equipa_id)
+    if name:
+        query = query.where(col(Jogador.name).contains(name))
     if posicao:
         query = query.where(Jogador.posicao == posicao)
     if salario_min:

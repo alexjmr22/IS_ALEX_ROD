@@ -37,18 +37,20 @@ def get_equipa(equipa_id: int) -> str:
 @mcp.tool()
 def get_jogadores(
     equipa_id: int | None = None,
+    name: str | None = None,
     posicao: str | None = None,
     salario_min: float | None = None,
     salario_max: float | None = None,
     mercado_min: float | None = None,
     mercado_max: float | None = None,
 ) -> str:
-    """Obtém a lista de todos os jogadores com filtro, diretamente da base de dados."""
+    """Obtém a lista de todos os jogadores com filtros opcionais (nome, posição, equipa, salário, valor de mercado)."""
     with Session(engine) as session:
         try:
             jogadores = core_get_jogadores(
                 session,
                 equipa_id=equipa_id,
+                name=name,
                 posicao=posicao,
                 salario_min=salario_min,
                 salario_max=salario_max,
@@ -102,20 +104,18 @@ def delete_jogador(jogador_id: int) -> str:
 @mcp.tool()
 def renew_jogador(
     jogador_id: int,
-    name: str | None = None,
     posicao: str | None = None,
     numero_camisola: int | None = None,
     mercado: float | None = None,
     salario: float | None = None,
     equipa_id: int | None = None,
 ) -> str:
-    """Atualiza os detalhes de um jogador de futebol pelo seu ID, diretamente da base de dados."""
+    """Transfere ou atualiza dados de um jogador existente pelo seu ID (posicao, camisola, salário, equipa). O nome não pode ser alterado."""
     with Session(engine) as session:
         try:
             jogador = core_renew_jogador(
                 session,
                 jogador_id,
-                name=name,
                 posicao=posicao,
                 numero_camisola=numero_camisola,
                 mercado=mercado,
