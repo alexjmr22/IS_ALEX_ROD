@@ -77,7 +77,16 @@ def create_jogador(
     salario: float,
     equipa_id: int,
 ) -> str:
-    """Cria um novo jogador na base de dados."""
+    """Cria um jogador NOVO na base de dados — usa APENAS quando o jogador NÃO existe ainda na BD.
+
+    REGRA CRÍTICA: Se o jogador já existir na BD (mesmo que noutro clube), usa renew_jogador para
+    o transferir. NÃO uses esta tool para jogadores já registados — resultará em erro.
+
+    Fluxo correto:
+      1. Antes de criar, verifica com get_jogadores se o jogador já existe (filtra por name).
+      2. Se existir → usa renew_jogador(jogador_id=<id>, equipa_id=<nova_equipa>).
+      3. Se não existir → usa esta tool para criar.
+    """
     with Session(engine) as session:
         try:
             jogador = core_sign_jogador(session, name, posicao, numero_camisola, mercado, salario, equipa_id)
@@ -110,7 +119,19 @@ def renew_jogador(
     salario: float | None = None,
     equipa_id: int | None = None,
 ) -> str:
-    """Transfere ou atualiza dados de um jogador existente pelo seu ID (posicao, camisola, salário, equipa). O nome não pode ser alterado."""
+    """Transfere ou atualiza dados de um jogador JA EXISTENTE na BD pelo seu ID.
+
+    Usa SEMPRE esta tool quando:
+      - O utilizador quer contratar/transferir um jogador que já existe na BD (mesmo clube ou outro).
+      - O utilizador quer atualizar posição, salário, camisola ou equipa de um jogador existente.
+
+    Para transferir entre equipas: passa jogador_id e equipa_id (nova equipa).
+    O nome do jogador NÃO pode ser alterado.
+
+    Fluxo correto para contratar um jogador existente:
+      1. Usa get_jogadores para encontrar o jogador pelo nome e obter o seu ID.
+      2. Usa renew_jogador(jogador_id=<id>, equipa_id=<equipa_destino>) para transferir.
+    """
     with Session(engine) as session:
         try:
             jogador = core_renew_jogador(
@@ -170,7 +191,30 @@ def get_jogadores_equipa(equipa_id: int) -> str:
             return json.dumps({"erro": str(e)})
 @mcp.tool()
 def get_jogador_posicao(posicao: str) -> str:
-    """Obtém a lista de jogadores por posição, diretamente da base de dados."""
+    """Obtém a lista de jogadores por posição, diretamente da base de dados.
+
+    O parâmetro 'posicao' deve ser um dos seguintes códigos (usa SEMPRE o código, nunca o nome por extenso):
+      - "GR"  → Guarda-Redes (goalkeeper)
+      - "DC"  → Defesa Central (centre-back)
+      - "LD"  → Lateral Direito (right-back)
+      - "LE"  → Lateral Esquerdo (left-back)
+      - "MCD" → Médio Centro Defensivo (defensive midfielder)
+      - "MC"  → Médio Centro (central midfielder)
+      - "MAO" → Médio Ala / Meia Ofensiva (attacking midfielder)
+      - "EXT" → Extremo / Ala (winger)
+      - "AV"  → Avançado / Ponta-de-Lança (striker / forward)
+
+    Exemplos de perguntas e o código correto a usar:
+      "avançados disponíveis" → posicao="AV"
+      "guarda-redes" → posicao="GR"
+      "defesas centrais" → posicao="DC"
+      "laterais direitos" → posicao="LD"
+      "laterais esquerdos" → posicao="LE"
+      "médios defensivos" → posicao="MCD"
+      "médios" ou "médios centro" → posicao="MC"
+      "médios ofensivos" ou "meias" → posicao="MAO"
+      "extremos" ou "alas" → posicao="EXT"
+    """
     with Session(engine) as session:
         try:
             jogadores = core_get_jogadores(session, posicao=posicao)
@@ -346,11 +390,21 @@ def football_director_prompt(manager_name: str = "Mister") -> str:
     return (
         f"Chamas-te agente e és o Diretor Desportivo do clube. ⚽🏆 "
         f"Estás a trabalhar com o {manager_name}. "
-        "Tens acesso a ferramentas para gerir equipas e jogadores: "
-        "podes consultar, criar, atualizar e eliminar equipas (`get_equipa`, `get_equipas`, `create_equipa`, `update_equipa`, `delete_equipa`) "
-        "e jogadores (`get_jogador`, `get_jogadores`, `create_jogador`, `update_jogador`, `delete_jogador`). "
-        "Consulta sempre os orçamentos disponíveis antes de aprovar transferências. 💰 "
-        "Usa emojis para tornar a conversa mais dinâmica e responde sempre em português. 🎯"
+        "Tens acesso a ferramentas para gerir equipas e jogadores. "
+
+        "REGRAS CRÍTICAS SOBRE JOGADORES: "
+        "1) Para CONTRATAR/TRANSFERIR um jogador que já existe na BD: usa SEMPRE renew_jogador(jogador_id=<id>, equipa_id=<destino>). "
+        "2) create_jogador é APENAS para jogadores NOVOS que nunca existiram na BD. "
+        "3) Antes de criar sempre verifica com get_jogadores(name=<nome>) se o jogador já existe. Se existir, usa renew_jogador. "
+        "4) Se já pertence à equipa alvo, informa o utilizador que o jogador já está nessa equipa. "
+
+        "POSIÇÕES — usa SEMPRE o código correto em get_jogador_posicao: "
+        "GR=Guarda-Redes, DC=Defesa Central, LD=Lateral Direito, LE=Lateral Esquerdo, "
+        "MCD=Médio Defensivo, MC=Médio Centro, MAO=Médio Ofensivo/Meia, EXT=Extremo/Ala, AV=Avançado. "
+        "Exemplo: 'avançados' → posicao='AV'; 'guarda-redes' → posicao='GR'. "
+
+        "Consulta sempre os orçamentos antes de aprovar transferências. 💰 "
+        "Usa emojis e responde sempre em português. 🎯"
     )
 
 

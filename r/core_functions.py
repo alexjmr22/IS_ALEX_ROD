@@ -262,10 +262,29 @@ def core_get_jogador(session: Session, jogador_id: int) -> Jogador:
 
 def core_sign_jogador(session: Session, name: str, posicao: str, numero_camisola: int,
                          mercado: float, salario: float, equipa_id: int) -> Jogador:
-    """Criar um jogador com validações de orçamento e camisola. Raises ValueError se regras falharem."""
+    """Criar um jogador NOVO (que ainda não existe na BD) com validações de orçamento e camisola.
+    Raises ValueError se regras falharem ou se o jogador já existir na BD."""
     equipa = session.get(Equipa, equipa_id)
     if not equipa:
         raise ValueError("Equipa não encontrada.")
+
+    # ── Impede duplicados: verifica se já existe um jogador com este nome na BD ──
+    jogador_existente = session.exec(
+        select(Jogador).where(col(Jogador.name).contains(name))
+    ).first()
+    if jogador_existente:
+        if jogador_existente.equipa_id == equipa_id:
+            raise ValueError(
+                f"O jogador '{jogador_existente.name}' (ID: {jogador_existente.id}) já pertence a esta equipa. "
+                "Não é necessário contratar de novo."
+            )
+        else:
+            equipa_atual = session.get(Equipa, jogador_existente.equipa_id)
+            equipa_nome = equipa_atual.name if equipa_atual else f"ID {jogador_existente.equipa_id}"
+            raise ValueError(
+                f"O jogador '{jogador_existente.name}' (ID: {jogador_existente.id}) já existe na BD e pertence a '{equipa_nome}'. "
+                f"Para transferi-lo usa renew_jogador com jogador_id={jogador_existente.id} e equipa_id={equipa_id}."
+            )
 
     jogadores_equipa = session.exec(select(Jogador).where(Jogador.equipa_id == equipa_id)).all()
     salario_total = sum(j.salario for j in jogadores_equipa)
