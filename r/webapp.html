@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Gemini Agent Chat</title>
+  <title>Diretor Desportivo · Agente MCP</title>
   <link
     href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap"
     rel="stylesheet" />
@@ -452,10 +452,10 @@
 
     <!-- Header -->
     <header>
-      <div class="logo">✦</div>
+      <div class="logo">⚽</div>
       <div class="header-text">
-        <h1>Gemini Agent</h1>
-        <p>MCP-powered · gemini-2.5-flash</p>
+        <h1>Diretor Desportivo</h1>
+        <p>MCP-powered · gemini-2.5-flash · Football Manager</p>
       </div>
       <div class="status-dot">
         <div class="dot" id="statusDot"></div>
@@ -466,12 +466,13 @@
     <!-- Messages -->
     <div id="messages">
       <div class="empty-state" id="emptyState">
-        <div class="big-icon">◈</div>
-        <p>Ask me anything. I can also calculate your BMI using my built-in tools.</p>
+        <div class="big-icon">🏆</div>
+        <p>Olá Mister! Sou o teu Diretor Desportivo. Posso gerir equipas, contratar jogadores e consultar orçamentos.</p>
         <div class="suggestions">
-          <button class="suggestion-chip" onclick="sendSuggestion(this)">What can you do?</button>
-          <button class="suggestion-chip" onclick="sendSuggestion(this)">Calculate BMI: 70kg, 1.75m</button>
-          <button class="suggestion-chip" onclick="sendSuggestion(this)">Give me a health tip</button>
+          <button class="suggestion-chip" onclick="sendSuggestion(this)">Quais são as equipas disponíveis?</button>
+          <button class="suggestion-chip" onclick="sendSuggestion(this)">Lista os jogadores da equipa 1</button>
+          <button class="suggestion-chip" onclick="sendSuggestion(this)">Qual o orçamento de transferências?</button>
+          <button class="suggestion-chip" onclick="sendSuggestion(this)">Quem são os avançados disponíveis?</button>
         </div>
       </div>
     </div>
@@ -479,7 +480,7 @@
     <!-- Input -->
     <div class="input-bar">
       <div class="input-row">
-        <textarea id="input" placeholder="Type a message…" rows="1" onkeydown="handleKey(event)"
+        <textarea id="input" placeholder="Fala comigo, Mister…" rows="1" onkeydown="handleKey(event)"
           oninput="autoResize(this)"></textarea>
         <button class="send-btn" id="sendBtn" onclick="sendMessage()" title="Send">↑</button>
       </div>
@@ -533,7 +534,7 @@
 
       const avatar = document.createElement('div');
       avatar.className = 'avatar';
-      avatar.textContent = role === 'user' ? 'you' : '✦';
+      avatar.textContent = role === 'user' ? 'you' : '⚽';
 
       const bubble = document.createElement('div');
       bubble.className = `bubble${isError ? ' error' : ''}`;
@@ -553,7 +554,7 @@
 
       const avatar = document.createElement('div');
       avatar.className = 'avatar';
-      avatar.textContent = '✦';
+      avatar.textContent = '⚽';
 
       const bubble = document.createElement('div');
       bubble.className = 'bubble';
@@ -602,7 +603,7 @@
         }
       } catch (e) {
         removeTyping();
-        appendMessage('agent', `Could not reach the agent. Is it running at ${getApiBase()}?`, true);
+        appendMessage('agent', `Não foi possível contactar o agente. Está a correr em ${getApiBase()}?`, true);
       } finally {
         sendBtn.disabled = false;
         checkHealth();

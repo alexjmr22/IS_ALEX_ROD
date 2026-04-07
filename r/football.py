@@ -13,7 +13,7 @@ from core_functions import (
     Equipa, EquipaUpdate, Jogador, PosicaoEnum, engine,
     create_db_and_tables, seed_data,
     core_get_equipas, core_get_equipa, core_create_equipa, core_update_equipa, core_delete_equipa,
-    core_get_jogadores, core_get_jogador, core_create_jogador, core_update_jogador, core_delete_jogador,
+    core_get_jogadores, core_get_jogador, core_sign_jogador, core_renew_jogador, core_delete_jogador,
     core_get_jogadores_por_equipa, core_get_jogadores_por_posicao,
 )
 
@@ -128,7 +128,7 @@ def create_jogador(
 ):
     with Session(engine) as session:
         try:
-            return core_create_jogador(session, name, posicao, numero_camisola,
+            return core_sign_jogador(session, name, posicao, numero_camisola,
                                         mercado, salario, equipa_id)
         except ValueError as e:
             _http(e)
@@ -145,8 +145,10 @@ def update_jogador(
 ):
     with Session(engine) as session:
         try:
-            return core_update_jogador(session, jogador_id, posicao, numero_camisola,
-                                        mercado, salario, equipa_id)
+            return core_renew_jogador(session, jogador_id, posicao=posicao,
+                                        numero_camisola=numero_camisola,
+                                        mercado=mercado, salario=salario,
+                                        equipa_id=equipa_id)
         except ValueError as e:
             _http(e)
 
