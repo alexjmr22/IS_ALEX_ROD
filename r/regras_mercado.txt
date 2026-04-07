@@ -2,16 +2,22 @@ REGRAS DE TRANSFERÊNCIA DE JOGADORES
 ====================================
 
 1. ORÇAMENTO DE TRANSFERÊNCIAS
-   - Cada equipa tem um orçamento disponível para transferências
-   - O valor de transferência de um jogador é DEDUZIDO imediatamente do orçamento ao criá-lo
-   - Não é possível criar um jogador se mercado > orcamento_transferencias_disponível
-   - Ao transferir um jogador para outra equipa, o orçamento da nova equipa é também decrementado
+   - Cada equipa tem um orçamento disponível para transferências (orcamento_transferencias)
+   - Este orçamento É DECREMENTADO quando um jogador é contratado: orcamento_transf -= mercado_jogador
+   - CONDIÇÃO: jogador.mercado <= equipa.orcamento_transferencias  (verificação INDEPENDENTE)
+   - EXEMPLO: equipa com €4M só pode contratar jogadores com valor de mercado <= €4M
 
 2. ORÇAMENTO DE SALÁRIOS
-   - Cada equipa tem um limite máximo de salários
-   - O salário total de todos os jogadores NOT pode exceder este limite (é apenas um LIMITE, não é decrementado)
-   - Validação: soma(salarios_jogadores_atuais) + novo_salario <= orcamento_salarios_limite
-   - Ao transferir um jogador, o novo salário é validado contra o limite da nova equipa
+   - Cada equipa tem um teto máximo de salários (orcamento_salarios) — NÃO é decrementado
+   - É um LIMITE MÁXIMO: soma de todos os salários ativos não pode superá-lo
+   - CONDIÇÃO: soma(salarios_atuais) + novo_salario <= equipa.orcamento_salarios  (verificação INDEPENDENTE)
+   - EXEMPLO: equipa com limite €12M e €4.9M já gastos em salários pode contratar jogador com salário <= €7.1M
+
+!! ATENÇÃO: Os dois orçamentos são COMPLETAMENTE INDEPENDENTES. NUNCA os somar !!
+   - ERRADO: "equipa tem €4M + €12M = €16M para gastar" — isto está INCORRETO
+   - CORRETO: verificar SEPARADAMENTE se mercado <= orcamento_transferencias E se salario cabe no teto
+   - Um jogador com mercado €12M e equipa com orcamento_transferencias €4M NÃO pode ser contratado,
+     independentemente do valor do orcamento_salarios (mesmo que este seja €100M)
 
 3. POSIÇÕES VÁLIDAS
    - GR  = Guarda-Redes
@@ -34,8 +40,9 @@ REGRAS DE TRANSFERÊNCIA DE JOGADORES
 
 6. TRANSFERÊNCIA DE JOGADORES
    - Um jogador pode ser transferido entre equipas (update com novo equipa_id)
+   - PROIBIDO transferir um jogador para a equipa à qual já pertence (seria uma auto-transferência sem sentido)
    - Validações na transferência:
-     * A equipa de destino deve existir
+     * A equipa de destino deve existir e ser DIFERENTE da equipa atual do jogador
      * O novo orçamento de salários da equipa de destino deve ter espaço para o salário (atual ou novo)
      * O novo orçamento de transferências da equipa de destino é decrementado pelo mercado
      * O número de camisola deve ser único na equipa de destino
@@ -48,7 +55,16 @@ REGRAS DE TRANSFERÊNCIA DE JOGADORES
    - IDs de equipa devem existir na base de dados
 
 8. NOTAS IMPORTANTES
-   - O orçamento de TRANSFERÊNCIAS é DECREMENTADO: representa o dinheiro gasto
-   - O orçamento de SALÁRIOS é um LIMITE: representa o teto máximo de gastos mensais
+   - O orçamento de TRANSFERÊNCIAS é DECREMENTADO: representa o dinheiro gasto na compra
+   - O orçamento de SALÁRIOS é um LIMITE: representa o teto máximo de gastos mensais com salários
+   - Os dois orçamentos são INDEPENDENTES — nunca somar os dois para obter um "orçamento total"
    - Ao deletar um jogador, o orçamento de transferências da equipa NÃO é restaurado
    - Posições são case-sensitive: devem ser exatamente como definido (GR, DC, etc.)
+
+9. JOGADORES DISPONÍVEIS PARA CONTRATAÇÃO
+   - Um jogador SÓ pode ser contratado por uma equipa se NÃO pertencer já a essa equipa
+   - Nunca sugerir contratar um jogador que já está na equipa compradora — é uma operação inválida
+   - Para saber quais jogadores uma equipa pode contratar, é necessário:
+     * Filtrar jogadores de OUTRAS equipas (excluir os que já pertencem à equipa compradora)
+     * Verificar se o valor de mercado do jogador <= orçamento de transferências disponível da equipa
+     * Verificar se o salário do jogador cabe no orçamento de salários restante da equipa
