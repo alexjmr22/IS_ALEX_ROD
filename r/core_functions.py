@@ -398,3 +398,82 @@ def core_get_jogadores_por_posicao(session: Session, posicao: str) -> dict:
     """Obter todos os jogadores de uma posição específica."""
     jogadores = session.exec(select(Jogador).where(Jogador.posicao == posicao)).all()
     return {"posicao": posicao, "jogadores": jogadores}
+
+
+# ─── CORE FUNCTIONS — ATUALIZAR SALÁRIO (duas variantes) ─────────────────────
+
+def core_atualizar_salario_valor(session: Session, jogador_id: int, novo_salario: float) -> dict:
+    """Atualiza o salário de um jogador para um novo valor absoluto (float).
+    Devolve também os valores de output como floats/ints."""
+    jogador = session.get(Jogador, jogador_id)
+    if not jogador:
+        raise ValueError(f"Jogador com ID {jogador_id} não encontrado.")
+    
+    if novo_salario < 0:
+        raise ValueError("O salário não pode ser negativo.")
+        
+    jogador.salario = novo_salario
+    session.add(jogador)
+    session.commit()
+    session.refresh(jogador)
+    
+    return {
+        "jogador_id": jogador.id,
+        "nome": jogador.name,
+        "novo_salario": jogador.salario,
+        "tipo_atualizacao": "valor_absoluto"
+    }
+
+
+def core_atualizar_salario_percentagem(session: Session, jogador_id: int, percentagem: str) -> dict:
+    """Atualiza o salário de um jogador através de uma percentagem (string, ex: '10%' ou '-5%').
+    Devolve os valores de output formatados como strings."""
+    jogador = session.get(Jogador, jogador_id)
+    if not jogador:
+        raise ValueError(f"Jogador com ID {jogador_id} não encontrado.")
+    
+    try:
+        perc_val = float(percentagem.replace('%', '').strip())
+    except ValueError:
+        raise ValueError("A percentagem deve ser um número, terminando opcionalmente por % (ex: '10%').")
+        
+    novo_salario = jogador.salario * (1 + perc_val / 100.0)
+    jogador.salario = round(novo_salario, 2)
+    session.add(jogador)
+    session.commit()
+    session.refresh(jogador)
+    
+    return {
+        "jogador_id": str(jogador.id),
+        "nome": jogador.name,
+        "novo_salario": f"{jogador.salario:.2f}M€",
+        "tipo_atualizacao": "percentagem",
+        "percentagem_aplicada": f"{perc_val}%"
+    }
+
+
+# ─── CORE FUNCTION — CONVERSÃO DE ORÇAMENTO (pode lançar exceção) ────────────
+
+def core_converter_orcamento(session: Session, equipa_id: int, taxa_cambio: float) -> dict:
+    """Converte o orçamento de uma equipa para outra moeda usando a taxa de câmbio e atualiza a base de dados.
+    ATENÇÃO: se taxa_cambio for 0, lança ZeroDivisionError (exceção não tratada).
+    Raises ValueError se equipa não existe."""
+    equipa = session.get(Equipa, equipa_id)
+    if not equipa:
+        raise ValueError(f"Equipa com ID {equipa_id} não encontrada.")
+    # Divisão intencional — taxa_cambio=0 provoca ZeroDivisionError
+    orcamento_convertido = equipa.orcamento_transferencias / taxa_cambio
+    salarios_convertido = equipa.orcamento_salarios / taxa_cambio
+    
+    equipa.orcamento_transferencias = orcamento_convertido
+    equipa.orcamento_salarios = salarios_convertido
+    session.add(equipa)
+    session.commit()
+    session.refresh(equipa)
+    
+    return {
+        "equipa": equipa.name,
+        "orcamento_transferencias_convertido": round(equipa.orcamento_transferencias, 2),
+        "orcamento_salarios_convertido": round(equipa.orcamento_salarios, 2),
+        "taxa_cambio_usada": taxa_cambio,
+    }

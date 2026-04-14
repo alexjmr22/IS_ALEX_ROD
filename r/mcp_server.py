@@ -12,6 +12,7 @@ from core_functions import (
     engine,
     core_get_equipa, core_create_equipa, core_update_equipa, core_delete_equipa, core_get_equipas,
     core_get_jogador, core_sign_jogador, core_renew_jogador, core_delete_jogador, core_get_jogadores,
+    core_atualizar_salario_valor, core_atualizar_salario_percentagem, core_converter_orcamento,
 )
 
 mcp = FastMCP(name="SimpleAssistantServer")
@@ -229,6 +230,49 @@ def get_jogador_posicao(posicao: str) -> str:
             } for j in jogadores], ensure_ascii=False, indent=2)
         except ValueError as e:
             return json.dumps({"erro": str(e)})
+
+
+# ─── ATUALIZAR SALÁRIO — duas variantes (requisito: operações semelhantes) ─────
+
+@mcp.tool()
+def atualizar_salario_jogador_valor(jogador_id: int, novo_salario: float) -> str:
+    """Atualiza o salário de um jogador para um novo valor absoluto (float).
+    Devolve a confirmação com os valores formatados como ints e floats."""
+    with Session(engine) as session:
+        try:
+            resultado = core_atualizar_salario_valor(session, jogador_id, novo_salario)
+            return json.dumps(resultado, ensure_ascii=False, indent=2)
+        except ValueError as e:
+            return json.dumps({"erro": str(e)})
+
+
+@mcp.tool()
+def atualizar_salario_jogador_percentagem(jogador_id: int, percentagem: str) -> str:
+    """Atualiza o salário de um jogador de acordo com uma percentagem (string, ex: '10%' ou '-5%').
+    Devolve a confirmação com os valores formatados em strings legíveis."""
+    with Session(engine) as session:
+        try:
+            resultado = core_atualizar_salario_percentagem(session, jogador_id, percentagem)
+            return json.dumps(resultado, ensure_ascii=False, indent=2)
+        except ValueError as e:
+            return json.dumps({"erro": str(e)})
+
+
+# ─── CONVERSÃO DE ORÇAMENTO (requisito: exceção não tratada) ─────────────────
+
+@mcp.tool()
+def converter_orcamento(equipa_id: int, taxa_cambio: float) -> str:
+    """Converte o orçamento de transferências e salários de uma equipa para outra moeda.
+    Usa a taxa de câmbio fornecida (ex: 1.1 para USD, 0.86 para GBP).
+    ATENÇÃO: se taxa_cambio for 0, a operação falha com uma exceção não tratada."""
+    with Session(engine) as session:
+        # ValueError (equipa não existe) é tratado; ZeroDivisionError NÃO é tratado
+        try:
+            resultado = core_converter_orcamento(session, equipa_id, taxa_cambio)
+            return json.dumps(resultado, ensure_ascii=False, indent=2)
+        except ValueError as e:
+            return json.dumps({"erro": str(e)})
+        # ZeroDivisionError propaga-se — operação não pode ser concluída
 
 
 @mcp.tool()

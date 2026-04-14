@@ -8,7 +8,7 @@ from pydantic import BaseModel
 # LangChain & LangGraph
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import HumanMessage
-from langgraph.prebuilt import create_react_agent
+from langgraph.prebuilt import create_react_agent, ToolNode
 from langgraph.checkpoint.memory import InMemorySaver
 
 # MCP Adapters
@@ -82,11 +82,12 @@ async def lifespan(app: FastAPI):
             tools = await load_mcp_tools(session)
             print("\n=== TOOLS CARREGADAS ===", tools)
 
+            tool_node = ToolNode(tools, handle_tool_errors=True)
             agent = create_react_agent(
                 model=llm,
-                tools=tools,
+                tools=tool_node,
                 prompt=system_instruction,
-                checkpointer=memory
+                checkpointer=memory,
             )
             print("✅ Agente inicializado com sucesso.")
 

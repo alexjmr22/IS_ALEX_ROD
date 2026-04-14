@@ -15,6 +15,7 @@ from core_functions import (
     core_get_equipas, core_get_equipa, core_create_equipa, core_update_equipa, core_delete_equipa,
     core_get_jogadores, core_get_jogador, core_sign_jogador, core_renew_jogador, core_delete_jogador,
     core_get_jogadores_por_equipa, core_get_jogadores_por_posicao,
+    core_atualizar_salario_valor, core_atualizar_salario_percentagem, core_converter_orcamento,
 )
 
 app = FastAPI()
@@ -177,6 +178,40 @@ def get_jogadores_por_equipa(equipa_id: int):
 def get_jogadores_por_posicao(posicao: str):
     with Session(engine) as session:
         return core_get_jogadores_por_posicao(session, posicao)
+
+# ─── ATUALIZAR SALÁRIO (duas variantes) ──────────────────────────────────────
+
+@app.put("/jogadores/{jogador_id}/salario/valor")
+def atualizar_salario_valor(jogador_id: int, novo_salario: float = Body(...)):
+    """Atualiza o salário usando um valor absoluto (input: float, output: floats)."""
+    with Session(engine) as session:
+        try:
+            return core_atualizar_salario_valor(session, jogador_id, novo_salario)
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.put("/jogadores/{jogador_id}/salario/percentagem")
+def atualizar_salario_percentagem(jogador_id: int, percentagem: str = Body(...)):
+    """Atualiza o salário usando uma percentagem (input: str, output: strs formatadas)."""
+    with Session(engine) as session:
+        try:
+            return core_atualizar_salario_percentagem(session, jogador_id, percentagem)
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+
+
+# ─── CONVERSÃO DE ORÇAMENTO (pode lançar exceção não tratada) ────────────────
+
+@app.get("/equipas/{equipa_id}/orcamento/converter")
+def converter_orcamento(equipa_id: int, taxa_cambio: float = Query(...)):
+    """Converte o orçamento para outra moeda. Se taxa_cambio=0, lança exceção."""
+    with Session(engine) as session:
+        try:
+            return core_converter_orcamento(session, equipa_id, taxa_cambio)
+        except ValueError as e:
+            raise HTTPException(status_code=404, detail=str(e))
+        # ZeroDivisionError NÃO é tratado — operação não pode ser concluída
 
 
 # ─── STARTUP ─────────────────────────────────────────────────────────────────
