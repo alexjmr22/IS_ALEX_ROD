@@ -207,6 +207,20 @@
       font-weight: 400;
       box-shadow: var(--shadow);
     }
+    .bubble p:not(:last-child) {
+      margin-bottom: 8px;
+    }
+    .bubble ul, .bubble ol {
+      margin-left: 18px;
+      margin-bottom: 8px;
+    }
+    .bubble li {
+      margin-bottom: 4px;
+    }
+    .bubble strong {
+      font-weight: 700;
+      color: var(--text);
+    }
 
     .msg.user .bubble {
       background: var(--user-bg);
@@ -495,6 +509,7 @@
 
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script>
     const messagesEl = document.getElementById('messages');
     const inputEl = document.getElementById('input');
@@ -538,7 +553,12 @@
 
       const bubble = document.createElement('div');
       bubble.className = `bubble${isError ? ' error' : ''}`;
-      bubble.textContent = text;
+      
+      if (!isError && role === 'agent' && typeof marked !== 'undefined') {
+        bubble.innerHTML = marked.parse(text, { breaks: true });
+      } else {
+        bubble.textContent = text;
+      }
 
       wrap.appendChild(avatar);
       wrap.appendChild(bubble);
