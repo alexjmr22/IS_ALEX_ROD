@@ -261,14 +261,15 @@ def atualizar_salario_jogador_percentagem(jogador_id: int, percentagem: str) -> 
 # ─── CONVERSÃO DE ORÇAMENTO (requisito: exceção não tratada) ─────────────────
 
 @mcp.tool()
-def converter_orcamento(equipa_id: int, taxa_cambio: float) -> str:
+def converter_orcamento(equipa_id: int, taxa_cambio: float, forcar_erro: bool = False) -> str:
     """Converte o orçamento de transferências e salários de uma equipa para outra moeda.
     Usa a taxa de câmbio fornecida (ex: 1.1 para USD, 0.86 para GBP).
-    ATENÇÃO: se taxa_cambio for 0, a operação falha com uma exceção não tratada."""
+    ATENÇÃO: se taxa_cambio for 0 (ou forcar_erro for True), a operação falha com uma exceção não tratada.
+    Usa forcar_erro = True se precisares de simular obrigatoriamente um erro."""
     with Session(engine) as session:
         # ValueError (equipa não existe) é tratado; ZeroDivisionError NÃO é tratado
         try:
-            resultado = core_converter_orcamento(session, equipa_id, taxa_cambio)
+            resultado = core_converter_orcamento(session, equipa_id, taxa_cambio, forcar_erro=forcar_erro)
             return json.dumps(resultado, ensure_ascii=False, indent=2)
         except ValueError as e:
             return json.dumps({"erro": str(e)})
@@ -447,8 +448,13 @@ def football_director_prompt(manager_name: str = "Mister") -> str:
         "MCD=Médio Defensivo, MC=Médio Centro, MAO=Médio Ofensivo/Meia, EXT=Extremo/Ala, AV=Avançado. "
         "Exemplo: 'avançados' → posicao='AV'; 'guarda-redes' → posicao='GR'. "
 
-        "Consulta sempre os orçamentos antes de aprovar transferências. 💰 "
-        "Usa emojis e responde sempre em português. 🎯"
+        "Consulta sempre os orçamentos antes de aprovar transferências. 💰\n"
+        "Usa emojis e responde sempre em português. 🎯\n\n"
+        "ESTRUTURA DE RESPOSTA E REGRAS (Lista de Tarefas e Anti-Alucinação):\n"
+        "1) NUNCA inventes ou adivinhes valores (salários, orçamentos, parâmetros). Se não souberes, usa a tool para obter. Se a tool falhar, NUNCA dês um valor ao calhas e sim avisa que falhou.\n"
+        "2) Se uma tool retornar erro, TENTA NOVAMENTE de uma forma diferente ou investiga o erro usando outras tools em vez de desistir.\n"
+        "3) Quando for pedido para alterar salários, verifica o valor mas PEDE CONFIRMAÇÃO ao utilizador depois da alteração, apresentando os novos valores e perguntando se deseja prosseguir para o passo seguinte.\n"
+        "4) Responde"
     )
 
 

@@ -454,10 +454,13 @@ def core_atualizar_salario_percentagem(session: Session, jogador_id: int, percen
 
 # ─── CORE FUNCTION — CONVERSÃO DE ORÇAMENTO (pode lançar exceção) ────────────
 
-def core_converter_orcamento(session: Session, equipa_id: int, taxa_cambio: float) -> dict:
+def core_converter_orcamento(session: Session, equipa_id: int, taxa_cambio: float, forcar_erro: bool = False) -> dict:
     """Converte o orçamento de uma equipa para outra moeda usando a taxa de câmbio e atualiza a base de dados.
-    ATENÇÃO: se taxa_cambio for 0, lança ZeroDivisionError (exceção não tratada).
+    ATENÇÃO: se taxa_cambio for 0 (ou forcar_erro for True), lança ZeroDivisionError (exceção não tratada).
     Raises ValueError se equipa não existe."""
+    if forcar_erro:
+        taxa_cambio = 0.0
+        
     equipa = session.get(Equipa, equipa_id)
     if not equipa:
         raise ValueError(f"Equipa com ID {equipa_id} não encontrada.")
