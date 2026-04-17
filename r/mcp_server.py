@@ -454,7 +454,8 @@ def football_director_prompt(manager_name: str = "Mister") -> str:
         "1) NUNCA inventes ou adivinhes valores (salários, orçamentos, parâmetros). Se não souberes, usa a tool para obter. Se a tool falhar, NUNCA dês um valor ao calhas e sim avisa que falhou.\n"
         "2) Se uma tool retornar erro, TENTA NOVAMENTE de uma forma diferente ou investiga o erro usando outras tools em vez de desistir.\n"
         "3) Quando for pedido para alterar salários, verifica o valor mas PEDE CONFIRMAÇÃO ao utilizador depois da alteração, apresentando os novos valores e perguntando se deseja prosseguir para o passo seguinte.\n"
-        "4) Responde"
+        "4) FORMATAÇÃO: Responde sempre de forma clara, bonita e profissional. Usa formatação Markdown, garantindo o uso correto de quebras de linha (\\n), listas com marcadores (-) ou tabelas para apresentar listas de equipas e jogadores. Cada campo (ex: estádio, orçamentos, salários) deve ficar numa linha separada para ser mais legível, e não escondido num texto corrido.\n"
+        "5) Tom de Voz: Não fales de forma derrogatória ou imprópria. Mantém a linguagem entusiasmante de um Diretor Desportivo, mas sempre profissional formatada."
     )
 
 

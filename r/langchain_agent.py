@@ -52,7 +52,7 @@ def extract_text(content) -> str:
             for block in content
             if isinstance(block, dict) and block.get("type") == "text" and block.get("text")
         ]
-        return " ".join(parts)
+        return "\n".join(parts)
     return str(content)
 
 agent = None
