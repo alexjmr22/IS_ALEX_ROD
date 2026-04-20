@@ -1,0 +1,9 @@
+{
+  "model": "gan",
+  "epochs": 20,
+  "batch_size": 64,
+  "lr": 0.0002,
+  "seed": 42,
+  "data_root": "./data",
+  "timestamp": "2026-04-20 15:27:50"
+}

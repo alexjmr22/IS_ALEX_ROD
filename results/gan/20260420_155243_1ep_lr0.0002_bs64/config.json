@@ -1,0 +1,14 @@
+{
+  "model": "gan",
+  "epochs": 1,
+  "batch_size": 64,
+  "lr": 0.0002,
+  "seed": 42,
+  "data_root": "./data",
+  "sample_count": 20,
+  "sample_nrow": 10,
+  "eval_num_runs": 10,
+  "eval_num_samples": 5000,
+  "eval_batch_size": 50,
+  "timestamp": "2026-04-20 15:52:43"
+}
